@@ -2,8 +2,8 @@ from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignK
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
 
+# First Time
 
-# Remplace user, password, host, port, dbname par tes infos PostgreSQL
 engine = create_engine('postgresql+psycopg2://user:password@localhost:5432/sanitas_resort', echo=True)
 Base = declarative_base()
 
