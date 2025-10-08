@@ -1,4 +1,4 @@
-from Model.Role import Doctor, Role, Tour_Guide, Analyst
+from Model.Role import Doctor, Tour_Guide, Analyst, Coordinator
 from Users import User
 
 class Entity:
@@ -61,92 +61,40 @@ class Medication(Entity):
         }
 
 class Player(Entity):
-    def __init__(self):
+    def __init__(self, name, team_name):
+        super().__init__(name, {})
+        
         self.roles = {
             "Doctor": Doctor(),
             "Tour Guide": Tour_Guide(),
-            "Analyst": Analyst()
+            "Analyst": Analyst(),
+            "Coordinator": Coordinator()
         }
-        self.username = User.username
+        self.username = name
+        self.team_name = team_name
         self.current_role = None
+        self.score = 0
+        self.team_score = 0
 
         self.attributes = {
             "roles": self.roles,
             "current_role": self.current_role,
             "username": self.username,
-            "score": 0,
-            "team_score": 0,
-            "team_name": User.team_name
+            "score": self.score,
+            "team_score": self.team_score,
+            "team_name": self.team_name
             }
-        
 
     def select_role(self, role_name):
+        if not self.roles.get(role_name):
+            return f"Role {role_name} does not exist"
+        
         if self.current_role is None:
             self.current_role = self.roles.get(role_name, None)
             return self.current_role
         else:
             return f"Role already selected: {self.current_role.name}"
 
-class Analyst(Role):
-    def __init__(self):
-        self.functions = {
-            "Camera Access": self.camera_access,
-            "Read Folders": self.read_folders,
-            "Read Patient Record": self.read_patient_record
-        }
-
-    def camera_access(self):
-        try:
-            if self.ressources["camera_access"] > 0 and self.functions["Camera Access"]:
-                self.ressources["camera_access"] -= 1
-                return self.functions.get("Camera Access")()
-            else:
-                return "No camera access available"
-        except Exception as e:
-            return f"Error accessing camera: {e}"
-    
-    def read_folders(self):
-        try:
-            if self.ressources["client_register"] > 0 and self.functions["Read Folders"]:
-                self.ressources["client_register"].read(1)
-                return self.functions.get("Read Folders")()
-        except Exception as e:
-            return f"Error reading folders: {e}"
-    
-    def read_patient_record(self, patient_name):
-        try:
-            patient = self.patients.get(patient_name)
-            if patient and self.functions["Read Patient Record"]:
-                for patient_folder in self.ressources["medical_folders"]:
-                    if patient_folder > 0:
-                        return {
-                            "Name": patient.name,
-                            "Age": patient.attributes["age"],
-                            "Symptoms": patient.attributes["symptoms"],
-                            "Diagnosis": patient.attributes["diagnosis"],
-                            "Medications": patient.attributes["medications"],
-                            "Allergies": patient.attributes["allergies"],
-                            "Notes": patient.attributes["notes"]
-                        }
-            else:
-                return f"Patient {patient_name} not found"
-        except Exception as e:
-            return f"Error reading patient record: {e}"
-
-class Coordinator(Role):
-    def __init__(self):
-        self.functions = {
-            "Coordinate Team": self.coordinate_team,
-            "Organize Resources": self.organize_resources
-        }
-
-    async def coordinate_team(self):
-        if self.functions["Coordinate Team"]:
-            return self.functions.get("Coordinate Team")()
-        
-    async def organize_resources(self):
-        if self.functions["Organize Resources"]:
-            return self.functions.get("Organize Resources")()
 
 class Game(Entity):
     def __init__(self):
@@ -195,13 +143,13 @@ class Game(Entity):
         except Exception as e:
             return f"Error accessing camera: {e}"
 
-    def access_zone(self, zone_name):
+    def access_zone(self, player, zone_name):
         try:
-            if Role == "Doctor" and zone_name == "Infirmary" and self.ressources["infirmary_keys"] > 0:
+            if player.current_role.name == "Doctor" and zone_name == "Infirmary" and self.ressources["infirmary_keys"] > 0:
                 z3 = self.zones["z3"]
                 z3.is_accessible = True
                 return z3
-            if Role == "Tour Guide" and zone_name == "Hotel" and zone_name == "Security" and zone_name == "Infirmary" and self.ressources["hotel_keys"] > 0 and self.ressources["security_keys"] > 0 and self.ressources["infirmary_keys"] > 0:
+            if player.current_role.name == "Tour Guide" and zone_name == "Hotel" and zone_name == "Security" and zone_name == "Infirmary" and self.ressources["hotel_keys"] > 0 and self.ressources["security_keys"] > 0 and self.ressources["infirmary_keys"] > 0:
                 z1 = self.zones["z1"]
                 z2 = self.zones["z2"]
                 z3 = self.zones["z3"]
@@ -209,7 +157,7 @@ class Game(Entity):
                 z2.is_accessible = True
                 z3.is_accessible = True
                 return z1, z2, z3
-            if Role == "Analyst" and zone_name == "Security" and self.ressources["security_keys"] > 0:
+            if player.current_role.name == "Analyst" and zone_name == "Security" and self.ressources["security_keys"] > 0:
                 z2 = self.zones["z2"]
                 z2.is_accessible = True
                 return z2
@@ -218,10 +166,10 @@ class Game(Entity):
         except Exception as e:
             return f"Error accessing zone: {e}"
     
-    def read_patient_record(self, patient_name):
+    def read_patient_record(self, player, patient_name):
         try:
             patient = self.patients.get(patient_name)
-            if patient and Role == "Analyst":
+            if patient and player.current_role.name == "Analyst":
                 for patient_folder in self.ressources["medical_folders"]:
                     if patient_folder > 0:
                         return {
