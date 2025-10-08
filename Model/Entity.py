@@ -29,7 +29,8 @@ class Zone(Entity):
             "is_accessible": is_accessible
         })
         self.is_accessible = is_accessible
-        return f"Zone {zone_dest.name} not found in game"
+        self.zone_dest = zone_dest
+        self.game = game
 
 class Symptom(Entity):
     def __init__(self):
@@ -86,18 +87,78 @@ class Player(Entity):
         else:
             return f"Role already selected: {self.current_role.name}"
 
+class Analyst(Role):
+    def __init__(self):
+        self.functions = {
+            "Camera Access": self.camera_access,
+            "Read Folders": self.read_folders,
+            "Read Patient Record": self.read_patient_record
+        }
+
+    def camera_access(self):
+        try:
+            if self.ressources["camera_access"] > 0 and self.functions["Camera Access"]:
+                self.ressources["camera_access"] -= 1
+                return self.functions.get("Camera Access")()
+            else:
+                return "No camera access available"
+        except Exception as e:
+            return f"Error accessing camera: {e}"
+    
+    def read_folders(self):
+        try:
+            if self.ressources["client_register"] > 0 and self.functions["Read Folders"]:
+                self.ressources["client_register"].read(1)
+                return self.functions.get("Read Folders")()
+        except Exception as e:
+            return f"Error reading folders: {e}"
+    
+    def read_patient_record(self, patient_name):
+        try:
+            patient = self.patients.get(patient_name)
+            if patient and self.functions["Read Patient Record"]:
+                for patient_folder in self.ressources["medical_folders"]:
+                    if patient_folder > 0:
+                        return {
+                            "Name": patient.name,
+                            "Age": patient.attributes["age"],
+                            "Symptoms": patient.attributes["symptoms"],
+                            "Diagnosis": patient.attributes["diagnosis"],
+                            "Medications": patient.attributes["medications"],
+                            "Allergies": patient.attributes["allergies"],
+                            "Notes": patient.attributes["notes"]
+                        }
+            else:
+                return f"Patient {patient_name} not found"
+        except Exception as e:
+            return f"Error reading patient record: {e}"
+
+class Coordinator(Role):
+    def __init__(self):
+        self.functions = {
+            "Coordinate Team": self.coordinate_team,
+            "Organize Resources": self.organize_resources
+        }
+
+    async def coordinate_team(self):
+        if self.functions["Coordinate Team"]:
+            return self.functions.get("Coordinate Team")()
+        
+    async def organize_resources(self):
+        if self.functions["Organize Resources"]:
+            return self.functions.get("Organize Resources")()
+
 class Game(Entity):
     def __init__(self):
-        accessible=True 
         self.patients = {
             "p1": Patient("John Doe", 30, ["cough", "fever"]),
             "p2": Patient("Jane Smith", 25, ["headache"]),
             "p3": Patient("Alice Johnson", 40, ["fatigue", "nausea"])
         }
         self.zones = {
-            "z1": Zone("Hotel", accessible= True),
-            "z2": Zone("Security", accessible= False),
-            "z3": Zone("Infirmary", accessible= True),
+            "z1": Zone("Hotel", is_accessible= True),
+            "z2": Zone("Security", is_accessible= False),
+            "z3": Zone("Infirmary", is_accessible= True),
         }
 
         self.ressources = {
@@ -110,9 +171,11 @@ class Game(Entity):
             "registration_list": 1,
             "masks": 4,
             "gloves": 1,
-            "infirmary_keys": 1,
-            "security_keys": 1,
-            "hotel_keys": 1
+            "infirmary_keys": 2,
+            "security_keys": 2,
+            "hotel_keys": 2,
+            "disinfectant": 2,
+            "client_register": 1
         }
 
         self.cameras = {
@@ -174,4 +237,3 @@ class Game(Entity):
                 return f"Patient {patient_name} not found"
         except Exception as e:
             return f"Error reading patient record: {e}"
-    

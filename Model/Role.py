@@ -29,19 +29,7 @@ class Doctor(Role):
             return "No tests available"
         game.ressources["tests"] -= 1
         patient.tests.append("diagnosis")
-        return "Diagnosis made on {patient.name}"
-    
-    async def read_patient_record(self, patient: Patient, game: Game):
-        patient_data = {
-            "Name": patient.name,
-            "Age": patient.age,
-            "Symptoms": patient.symptoms,
-            "Diagnosis": patient.diagnosis,
-            "Medications": patient.medications,
-            "Allergies": patient.allergies,
-            "Notes": patient.notes
-        }
-        return patient_data
+        return "Diagnosis made on the patient"
 
     async def prescribe_medication(self, patient: Patient, medication: str):
         patient.medications.append(medication)
@@ -75,18 +63,30 @@ class Analyst(Role):
                 return camera.feed
         return f"Camera {camera_id} not found"
     
-    async def read_folders(self, folder_name: str, game: Game):
-        for folder in game.folders:
+    async def read_register(self, folder_name: str, game: Game):
+        for folder in game.registers:
             if folder.name == folder_name:
                 return folder.contents
         return f"Folder {folder_name} not found"
+    
+    async def read_patient_record(self, patient: Patient, game: Game):
+        patient_data = {
+            "Name": patient.name,
+            "Age": patient.age,
+            "Symptoms": patient.symptoms,
+            "Diagnosis": patient.diagnosis,
+            "Medications": patient.medications,
+            "Allergies": patient.allergies,
+            "Notes": patient.notes
+        }
+        return patient_data
 
 
 class Coordinator(Role):
     def __init__(self):
         super().__init__("Coordinator")
-        self.register_action("Take Decision", self.take_decision)
-        self.register_action("Outside Communication", self.outside_communication)
+        self.register_action("Coordinate Team", self.coordinate_team)
+        self.register_action("Organize Resources", self.organize_resources)
     
     async def take_decision(self, decision: str, game: Game):
         game.decisions.append(decision)
