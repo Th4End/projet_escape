@@ -2,7 +2,7 @@ import bcrypt
 import re
 
 class User:
-    def __init__(self, user_id, username, email, password_hash, password):
+    def __init__(self, user_id=None, username=None, email=None, password_hash=None, password=None):
         self.user_id = user_id
         self.username = username
         self.email = email
